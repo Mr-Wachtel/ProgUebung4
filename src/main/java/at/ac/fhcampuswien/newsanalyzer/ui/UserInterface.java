@@ -1,16 +1,21 @@
 package at.ac.fhcampuswien.newsanalyzer.ui;
 
-
 import at.ac.fhcampuswien.newsanalyzer.ctrl.Controller;
 import at.ac.fhcampuswien.newsanalyzer.ctrl.NewsAPIException;
+import at.ac.fhcampuswien.newsanalyzer.downloader.Downloader;
+import at.ac.fhcampuswien.newsanalyzer.downloader.ParallelDownloader;
+import at.ac.fhcampuswien.newsanalyzer.downloader.SequentialDownloader;
 import at.ac.fhcampuswien.newsapi.NewsApi;
 import at.ac.fhcampuswien.newsapi.NewsApiBuilder;
 import at.ac.fhcampuswien.newsapi.enums.Country;
 import at.ac.fhcampuswien.newsapi.enums.Endpoint;
+import org.apache.commons.lang3.time.StopWatch;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 
 public class UserInterface {
 
@@ -37,7 +42,6 @@ public class UserInterface {
 		System.out.println(result);
 	}
 
-
 	public void start() {
 		Menu<Runnable> menu = new Menu<>("User Interface");
 		menu.insert("a", "Top headlines for Austria", this::getTopHeadlinesAustria);
@@ -47,24 +51,53 @@ public class UserInterface {
 		menu.insert("x", "Shortest author name", this::getShortestNameOfAuthors);	// Exercise 3
 		menu.insert("y", "Get article count", this::getArticleCount);	// Exercise 3
 		menu.insert("z", "Sort by longest title", this::getSortArticlesByLongestTitle); // Exercise 3
-		menu.insert("g", "Download URLs", () -> {
-			//Todo
+		menu.insert("g", "Download Last Search: Sequential", this::getDownloadLastSearchSeq); // Exercise 4
+		menu.insert("h", "Download Last Search: Parallel", this::getDownloadLastSearchPar); // Exercise 4
+		menu.insert("i", "Download Last Search: SEQ + PAR (+Time)", () -> {	// Exercise 4
+
+			System.out.println("Sequential Download: ");
+
+			long start2seq = System.currentTimeMillis();
+
+			getDownloadLastSearchSeq();
+
+			//long end1seq = System.nanoTime();
+			//System.out.println("Elapsed Time in nano seconds: "+ (end1seq-start1seq));
+			long end2seq = System.currentTimeMillis();
+			System.out.println("Elapsed Time in milli seconds: "+ (end2seq-start2seq));
+			//stopWatch.stop();
+			//System.out.println("Elapsed Time in minutes: "+ stopWatch.getTime());
+
+			System.out.println("\nParallel Download: ");
+			//StopWatch stopWatch2 = new StopWatch();
+			//stopWatch2.start();
+			//long start1par = System.nanoTime();
+			long start2par = System.currentTimeMillis();
+
+			getDownloadLastSearchPar();
+
+			//long end1par = System.nanoTime();
+			//System.out.println("Elapsed Time in nano seconds: "+ (end1par-start1par));
+
+			long end2par = System.currentTimeMillis();
+			System.out.println("Elapsed Time in milli seconds: "+ (end2par-start2par));
+			//stopWatch2.stop();
+			//System.out.println("Elapsed Time in minutes: "+ stopWatch2.getTime());
 		});
 		menu.insert("q", "Quit", null);
 		Runnable choice;
 		while ((choice = menu.exec()) != null) {
-			 choice.run();
+			choice.run();
 		}
 		System.out.println("Program finished");
 	}
 
-
-    protected String readLine() {
+	protected String readLine() {
 		String value = "\0";
 		BufferedReader inReader = new BufferedReader(new InputStreamReader(System.in));
 		try {
 			value = inReader.readLine();
-        } catch (IOException ignored) {
+		} catch (IOException ignored) {
 
 		}
 		return value.trim();
@@ -72,24 +105,57 @@ public class UserInterface {
 
 	protected Double readDouble(int lowerlimit, int upperlimit) 	{
 		Double number = null;
-        while (number == null) {
+		while (number == null) {
 			String str = this.readLine();
 			try {
 				number = Double.parseDouble(str);
-            } catch (NumberFormatException e) {
-                number = null;
+			} catch (NumberFormatException e) {
+				number = null;
 				System.out.println("Please enter a valid number:");
 				continue;
 			}
-            if (number < lowerlimit) {
+			if (number < lowerlimit) {
 				System.out.println("Please enter a higher number:");
-                number = null;
-            } else if (number > upperlimit) {
+				number = null;
+			} else if (number > upperlimit) {
 				System.out.println("Please enter a lower number:");
-                number = null;
+				number = null;
 			}
 		}
 		return number;
+	}
+
+	/** TODO
+	 *   Download Last Search: sequential
+	 *   ERWEITERUNG -> Verbesserung des Exception Handling
+	 */
+	private void getDownloadLastSearchSeq() {
+		try {
+			List<String> allURLs = ctrl.getAllURLs();
+			SequentialDownloader sequential = new SequentialDownloader();
+
+			sequential.process(allURLs);
+		} catch (NewsAPIException e) {
+			System.out.println("Please load data first!");
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+	}
+	/** TODO
+	 *   Download Last Search: parallel
+	 *   ERWEITERUNG -> Verbesserung des Exception Handling
+	 */
+	private void getDownloadLastSearchPar() {
+		try {
+			List<String> allURLs = ctrl.getAllURLs();
+			ParallelDownloader parallel = new ParallelDownloader();
+
+			parallel.process(allURLs);
+		} catch (NewsAPIException e) {
+			System.out.println("Please load data first!");
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
 	}
 
 	/**
@@ -137,12 +203,10 @@ public class UserInterface {
 		}
 	}
 
-
 	/**
 	 * Get the Provider with the most articles
 	 *
 	 */
-
 	protected void getProviderWithMostArticles() {
 		try {
 			String result = ctrl.getProviderWithMostArticles();
@@ -195,7 +259,7 @@ public class UserInterface {
 		try {
 			result = ctrl.process(newsApi);
 		} catch (NewsAPIException e) {
-			System.err.println("Error occured: " + e.getMessage());
+			System.err.println("Error occurred: " + e.getMessage());
 		} catch (Exception e){
 			System.out.println(e.getMessage());
 		}

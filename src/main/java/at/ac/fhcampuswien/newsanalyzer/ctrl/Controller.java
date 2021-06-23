@@ -1,9 +1,12 @@
 package at.ac.fhcampuswien.newsanalyzer.ctrl;
 
+import at.ac.fhcampuswien.newsanalyzer.downloader.Downloader;
 import at.ac.fhcampuswien.newsapi.NewsApi;
 import at.ac.fhcampuswien.newsapi.beans.Article;
 import at.ac.fhcampuswien.newsapi.beans.NewsResponse;
 import at.ac.fhcampuswien.newsapi.beans.Source;
+
+import java.net.URL;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -26,7 +29,15 @@ public class Controller {
 		System.out.println("End process");
 
 		return getArticlesPrintReady();
+
 	}
+
+	public List<String> getAllURLs () throws NewsAPIException {
+		return articles.stream()
+				.map(Article::getUrl)			// get all URLs
+				.collect(Collectors.toList()); 	// Convert the Stream to List
+	}
+
 
 	public List<Article> getArticles(NewsApi newsApi) throws NewsAPIException {
 		NewsResponse newsResponse = newsApi.getNews();
@@ -34,7 +45,7 @@ public class Controller {
 		if(!newsResponse.getStatus().equals("ok")){
 			throw new NewsAPIException("News Response returned status " + newsResponse.getStatus());
 		}
-		
+
 		return newsResponse.getArticles();
 	}
 
